@@ -1,0 +1,23 @@
+{
+    "name": "bigtallbill/mongo-dba",
+    "version": "0.0.1",
+    "description": "A very small mongo dba with a simple model class",
+    "minimum-stability": "dev",
+    "license": "proprietary",
+    "require": {
+        "php": "^7.0",
+        "mongodb/mongodb": "^1.0.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^5.3"
+    },
+    "autoload": {
+        "psr-4": {"SerialImprovement\\": "src/SerialImprovement"}
+    },
+    "authors": [
+        {
+            "name": "bigtallbill",
+            "email": "bigtallbill@gmail.com"
+        }
+    ]
+}
