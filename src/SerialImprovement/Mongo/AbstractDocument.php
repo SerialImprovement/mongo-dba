@@ -6,15 +6,15 @@ namespace SerialImprovement\Mongo;
 
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDatetime;
-use MongoDB\Client;
 
 /**
  * Class AbstractDocument
- * @package SerialImprovement\Mongo
  *
- * @param _id string
- * @param createdDate UTCDatetime
- * @param updatedDate UTCDatetime
+ * @property string _id
+ * @property UTCDatetime createdDate
+ * @property UTCDatetime updatedDate
+ *
+ * @package SerialImprovement\Mongo
  */
 abstract class AbstractDocument
 {
@@ -172,6 +172,20 @@ abstract class AbstractDocument
         $doc->fromDocument($item);
 
         return $doc;
+    }
+
+    /**
+     * Delete this object from the database
+     */
+    public function delete()
+    {
+        $name = static::getDocumentName();
+
+        $this->connector
+            ->getMongoClient()
+            ->selectDatabase($this->getDatabaseName())
+            ->selectCollection($name . 's')
+            ->deleteOne([self::INTERNAL_PRIMARY_KEY => $this->_id]);
     }
 
     /**
