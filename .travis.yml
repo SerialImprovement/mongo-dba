@@ -1,5 +1,7 @@
 language: php
 php:
   - '7.0'
+before-script:
+  - pecl install mongodb
 install:
   - composer install
