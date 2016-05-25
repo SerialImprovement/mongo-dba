@@ -8,6 +8,9 @@
          beStrictAboutTestsThatDoNotTestAnything="true"
          beStrictAboutTodoAnnotatedTests="true"
          verbose="true">
+    <logging>
+        <log type="coverage-html" target="report"/>
+    </logging>
     <testsuite>
         <directory suffix="Test.php">tests</directory>
     </testsuite>
