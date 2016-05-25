@@ -2,8 +2,7 @@ language: php
 php:
   - '7.0'
 install:
-  - composer install
-before_script:
   - pecl install mongodb
+  - composer install
 script:
   - phpunit
