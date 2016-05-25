@@ -1,6 +1,8 @@
 language: php
 php:
   - '7.0'
+services:
+  - mongodb
 install:
   - pecl install mongodb
   - composer install
