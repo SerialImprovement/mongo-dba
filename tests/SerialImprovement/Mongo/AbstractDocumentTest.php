@@ -23,7 +23,8 @@ class ConcreteDocument extends AbstractDocument {
     protected function getDefaultFields(): array
     {
         return [
-            'banana'
+            'banana',
+            'address'
         ];
     }
 
@@ -32,6 +33,24 @@ class ConcreteDocument extends AbstractDocument {
      *
      * @return string
      */
+    protected function getDatabaseName(): string
+    {
+        return 'test';
+    }
+}
+
+class AddressDocument extends AbstractDocument {
+    protected function getDefaultFields(): array
+    {
+        return [
+            'line1',
+            'line2',
+            'state',
+            'city',
+            'zip'
+        ];
+    }
+
     protected function getDatabaseName(): string
     {
         return 'test';
@@ -90,6 +109,99 @@ class AbstractDocumentTest extends \PHPUnit_Framework_TestCase
 
         $this->assertArrayHasKey('banana', $actual);
         $this->assertEquals('peeled', $actual['banana']);
+    }
+
+    /**
+     * EMBEDDED TESTS
+     */
+
+    public function testFromDocumentEmbedded()
+    {
+        $doc = new ConcreteDocument($this->buildMongoClientMock());
+
+        $document = [
+            'banana' => 'unpeeled',
+            'address' => [
+                'line1' => 'test',
+                'line2' => 'test',
+                'state' => 'cambridge',
+                'city' => 'MA',
+                'zip' => '12432',
+                AbstractDocument::INTERNAL_EMBEDDED_CLASS_FIELD => 'SerialImprovement\Mongo\AddressDocument',
+            ]
+        ];
+
+        $doc->fromDocument($document);
+
+        $this->assertEquals('unpeeled', $doc->banana);
+        $this->assertEquals('test', $doc->address->line1);
+    }
+
+    public function testToDocumentEmbedded()
+    {
+        $doc = new ConcreteDocument($this->buildMongoClientMock());
+        $doc->banana = 'unpeeled';
+
+        $address = new AddressDocument($this->buildMongoClientMock());
+        $address->line1 = 'test';
+        $address->line2 = 'test';
+        $address->state = 'MA';
+        $address->city = 'cambridge';
+        $address->zip = '12432';
+
+        $doc->address = $address;
+
+        $actual = $doc->toDocument();
+        $actual = $actual['address'];
+
+        $this->assertArrayHasKey(
+            AbstractDocument::INTERNAL_EMBEDDED_CLASS_FIELD,
+            $actual,
+            'address should have the special embedded class field'
+        );
+
+        $this->assertSame(
+            AddressDocument::class,
+            $actual[AbstractDocument::INTERNAL_EMBEDDED_CLASS_FIELD],
+            'address key should contain a reference to its model class'
+        );
+
+        $this->assertArrayHasKey('line1', $actual);
+        $this->assertArrayHasKey('createdDate', $actual, 'a date should be added if not specified');
+        $this->assertInstanceOf('MongoDB\BSON\UTCDatetime', $actual['createdDate']);
+
+        $this->assertArrayHasKey('_id', $actual, 'the _id should be added if not specified');
+        $this->assertInstanceOf('MongoDB\BSON\ObjectID', $actual['_id']);
+    }
+
+    public function testToArrayEmbedded()
+    {
+        $doc = new ConcreteDocument($this->buildMongoClientMock());
+        $doc->banana = 'peeled';
+
+        $address = new AddressDocument($this->buildMongoClientMock());
+        $address->line1 = 'test';
+        $address->line2 = 'test';
+        $address->state = 'MA';
+        $address->city = 'cambridge';
+        $address->zip = '12432';
+
+        $doc->address = $address;
+
+        $actual = $doc->toArray();
+
+        $this->assertArrayHasKey('address', $actual);
+        $this->assertArrayHasKey('line1', $actual['address']);
+        $this->assertArrayHasKey('line2', $actual['address']);
+        $this->assertArrayHasKey('state', $actual['address']);
+        $this->assertArrayHasKey('city', $actual['address']);
+        $this->assertArrayHasKey('zip', $actual['address']);
+
+        $this->assertArrayNotHasKey(
+            AbstractDocument::INTERNAL_EMBEDDED_CLASS_FIELD,
+            $actual['address'],
+            'Should not return the special embedded model class name'
+        );
     }
 
     /**

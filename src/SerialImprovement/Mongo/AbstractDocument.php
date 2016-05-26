@@ -6,6 +6,7 @@ namespace SerialImprovement\Mongo;
 
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDatetime;
+use MongoDB\Model\BSONDocument;
 
 /**
  * Class AbstractDocument
@@ -26,6 +27,7 @@ abstract class AbstractDocument
     const INTERNAL_FIELD_DATE = 'createdDate';
     const INTERNAL_PRIMARY_KEY = '_id';
     const INTERNAL_FIELD_UPDATED_DATE = 'updatedDate';
+    const INTERNAL_EMBEDDED_CLASS_FIELD = 'embeddedClass';
 
     /** @var Connector */
     protected $connector;
@@ -62,7 +64,23 @@ abstract class AbstractDocument
     {
         foreach ($this->fields as $field) {
             if (isset($document[$field])) {
-                $this->{$field} = $document[$field];
+
+                // could potentially be an embedded document
+                $couldBeEmbedded = is_array($document[$field]) ||
+                    $document[$field] instanceof BSONDocument;
+
+                // definitely is embedded
+                $isEmbedded = $couldBeEmbedded &&
+                    isset($document[$field][self::INTERNAL_EMBEDDED_CLASS_FIELD]);
+
+                if ($isEmbedded) {
+                    $embeddedClass = $document[$field][self::INTERNAL_EMBEDDED_CLASS_FIELD];
+
+                    $this->{$field} = new $embeddedClass($this->connector);
+                    $this->{$field}->fromDocument($document[$field]);
+                } else {
+                    $this->{$field} = $document[$field];
+                }
             }
         }
     }
@@ -77,7 +95,17 @@ abstract class AbstractDocument
             $this->attributes[self::INTERNAL_PRIMARY_KEY] = new ObjectID();
         }
 
-        return $this->attributes;
+        $doc = [];
+        foreach ($this->attributes as $key => $value) {
+            if ($value instanceof AbstractDocument) {
+                $doc[$key] = $value->toDocument();
+                $doc[$key][self::INTERNAL_EMBEDDED_CLASS_FIELD] = get_class($value);
+            } else {
+                $doc[$key] = $value;
+            }
+        }
+
+        return $doc;
     }
 
     public function toArray()
@@ -88,6 +116,8 @@ abstract class AbstractDocument
                 $array[$key] = $value->__toString();
             } else if ($value instanceof UTCDatetime) {
                 $array[$key] = $value->__toString();
+            } else if ($value instanceof AbstractDocument) {
+                $array[$key] = $value->toArray();
             } else {
                 $array[$key] = $value;
             }
