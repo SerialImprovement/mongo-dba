@@ -173,7 +173,7 @@ abstract class AbstractDocument
      * @param $options
      * @return AbstractDocument[]
      */
-    public static function find(Connector $connector, array $criteria, array $options): array
+    public static function find(Connector $connector, array $criteria = [], array $options = []): array
     {
         $fqn = static::class;
 
@@ -197,7 +197,7 @@ abstract class AbstractDocument
         return $results;
     }
 
-    public static function findOne(Connector $connector, array $criteria, array $options): AbstractDocument
+    public static function findOne(Connector $connector, array $criteria = [], array $options = []): AbstractDocument
     {
         $fqn = static::class;
 
@@ -217,6 +217,24 @@ abstract class AbstractDocument
         $doc->fromDocument($item);
 
         return $doc;
+    }
+
+    public static function distinct(
+        Connector $connector,
+        string $fieldName,
+        array $filter = [],
+        array $options = []
+    ): array {
+        $fqn = static::class;
+
+        /** @var AbstractDocument $doc */
+        $doc = new $fqn($connector);
+
+        return $connector
+            ->getMongoClient()
+            ->selectDatabase($doc::getDatabaseName())
+            ->selectCollection($doc::getCollectionName())
+            ->distinct($fieldName, $filter, $options);
     }
 
     /**
