@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "8154b0cb9677b5c3da0f356af9afe41a",
+    "content-hash": "42fb17ecb46665e5a1eece660ca97ba7",
     "packages": [
         {
             "name": "mongodb/mongodb",
@@ -873,7 +873,7 @@
                 "compare",
                 "equality"
             ],
-            "time": "2017-03-07T10:34:43+00:00"
+            "time": "2017-03-07 10:34:43"
         },
         {
             "name": "sebastian/diff",
