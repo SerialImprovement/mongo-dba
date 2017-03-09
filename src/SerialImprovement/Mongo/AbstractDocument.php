@@ -21,9 +21,7 @@ abstract class AbstractDocument
 {
     private $attributes = [];
     private $fields = [];
-    private $fieldTypes = [];
 
-    const TYPE_DATE = 'date';
     const INTERNAL_FIELD_DATE = 'createdDate';
     const INTERNAL_PRIMARY_KEY = '_id';
     const INTERNAL_FIELD_UPDATED_DATE = 'updatedDate';
@@ -48,6 +46,15 @@ abstract class AbstractDocument
 
     public function __set($name, $value)
     {
+        $this->set($name, $value);
+    }
+
+    /**
+     * @param string $name
+     * @param mixed $value
+     */
+    public function set(string $name, $value)
+    {
         if (!in_array($name, $this->fields)) {
             throw new \RuntimeException("$name does not exist in fields");
         }
@@ -57,6 +64,20 @@ abstract class AbstractDocument
 
     public function __get($name)
     {
+        return $this->get($name);
+    }
+
+    /**
+     * @param string $name
+     * @param mixed $default
+     * @return mixed|null
+     */
+    public function get(string $name, $default = null)
+    {
+        if (!isset($this->attributes[$name])) {
+            return $default;
+        }
+
         return $this->attributes[$name];
     }
 

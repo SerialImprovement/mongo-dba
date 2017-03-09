@@ -68,6 +68,14 @@ class AbstractDocumentTest extends \PHPUnit_Framework_TestCase
         $doc->wally = 'does not work';
     }
 
+    public function testGetWithDefault()
+    {
+        $doc = new ConcreteDocument($this->buildMongoClientMock());
+        $this->assertNull($doc->i_dont_exist);
+        $this->assertNull($doc->get('i_dont_exist'));
+        $this->assertSame('default', $doc->get('i_have_default',  'default'), 'a specified default should return');
+    }
+
     public function testFromDocument()
     {
         $doc = new ConcreteDocument($this->buildMongoClientMock());
