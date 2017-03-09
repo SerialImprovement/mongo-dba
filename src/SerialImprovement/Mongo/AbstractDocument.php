@@ -127,26 +127,22 @@ abstract class AbstractDocument
 
     public function insert()
     {
-        $name = $this->getDocumentName();
-
         $this->connector
             ->getMongoClient()
-            ->selectDatabase($this->getDatabaseName())
-            ->selectCollection($name . 's')
+            ->selectDatabase(static::getDatabaseName())
+            ->selectCollection(static::getCollectionName())
             ->insertOne($this->toDocument());
     }
 
     public function update()
     {
-        $name = $this->getDocumentName();
-
         $update = $this->toDocument();
         $update[self::INTERNAL_FIELD_UPDATED_DATE] = new UTCDatetime(round(microtime(true) * 1000));
 
         $this->connector
             ->getMongoClient()
-            ->selectDatabase($this->getDatabaseName())
-            ->selectCollection($name . 's')
+            ->selectDatabase(static::getDatabaseName())
+            ->selectCollection(static::getCollectionName())
             ->updateOne([self::INTERNAL_PRIMARY_KEY => $this->_id], ['$set' => $update]);
     }
 
@@ -158,7 +154,6 @@ abstract class AbstractDocument
      */
     public static function find(Connector $connector, array $criteria, array $options): array
     {
-        $name = static::getDocumentName();
         $fqn = static::class;
 
         /** @var AbstractDocument $doc */
@@ -166,8 +161,8 @@ abstract class AbstractDocument
 
         $cursor = $connector
             ->getMongoClient()
-            ->selectDatabase($doc->getDatabaseName())
-            ->selectCollection($name . 's')
+            ->selectDatabase($doc::getDatabaseName())
+            ->selectCollection($doc::getCollectionName())
             ->find($criteria, $options);
 
         $results = [];
@@ -183,7 +178,6 @@ abstract class AbstractDocument
 
     public static function findOne(Connector $connector, array $criteria, array $options): AbstractDocument
     {
-        $name = static::getDocumentName();
         $fqn = static::class;
 
         /** @var AbstractDocument $doc */
@@ -191,8 +185,8 @@ abstract class AbstractDocument
 
         $item = $connector
             ->getMongoClient()
-            ->selectDatabase($doc->getDatabaseName())
-            ->selectCollection($name . 's')
+            ->selectDatabase($doc::getDatabaseName())
+            ->selectCollection($doc::getCollectionName())
             ->findOne($criteria, $options);
 
         if ($item === null) {
@@ -209,12 +203,10 @@ abstract class AbstractDocument
      */
     public function delete()
     {
-        $name = static::getDocumentName();
-
         $this->connector
             ->getMongoClient()
-            ->selectDatabase($this->getDatabaseName())
-            ->selectCollection($name . 's')
+            ->selectDatabase(static::getDatabaseName())
+            ->selectCollection(static::getCollectionName())
             ->deleteOne([self::INTERNAL_PRIMARY_KEY => $this->_id]);
     }
 
@@ -239,5 +231,17 @@ abstract class AbstractDocument
      *
      * @return string
      */
-    abstract protected function getDatabaseName(): string;
+    abstract protected static function getDatabaseName(): string;
+
+    /**
+     * Should return the name of the collection to store this object in
+     *
+     * By default will use the lowercase version of the implementing class
+     *
+     * @return string
+     */
+    protected static function getCollectionName(): string
+    {
+        return static::getDocumentName() . 's';
+    }
 }
