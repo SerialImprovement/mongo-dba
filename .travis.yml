@@ -7,4 +7,4 @@ install:
   - pecl install mongodb
   - composer install
 script:
-  - phpunit
+  - ./vendor/bin/phpunit -c phpunit.xml
