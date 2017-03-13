@@ -1,8 +1,5 @@
 <?php
-
-
 namespace SerialImprovement\Mongo;
-
 
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDatetime;
@@ -159,6 +156,9 @@ abstract class AbstractDocument
     {
         $update = $this->toDocument();
         $update[self::INTERNAL_FIELD_UPDATED_DATE] = new UTCDatetime(round(microtime(true) * 1000));
+
+        // remove the _id from the update
+        unset($update[self::INTERNAL_PRIMARY_KEY]);
 
         $this->connector
             ->getMongoClient()
