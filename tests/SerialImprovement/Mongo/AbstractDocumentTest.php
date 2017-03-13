@@ -33,7 +33,7 @@ class ConcreteDocument extends AbstractDocument {
      *
      * @return string
      */
-    protected static function getDatabaseName(): string
+    public static function getDatabaseName(): string
     {
         return 'test';
     }
@@ -51,7 +51,7 @@ class AddressDocument extends AbstractDocument {
         ];
     }
 
-    protected static function getDatabaseName(): string
+    public static function getDatabaseName(): string
     {
         return 'test';
     }

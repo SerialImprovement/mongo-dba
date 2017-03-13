@@ -33,7 +33,7 @@ class ConcreteDocument extends AbstractDocument {
      *
      * @return string
      */
-    protected static function getDatabaseName(): string
+    public static function getDatabaseName(): string
     {
         return 'test';
     }
@@ -51,7 +51,7 @@ class AddressDocument extends AbstractDocument {
         ];
     }
 
-    protected static function getDatabaseName(): string
+    public static function getDatabaseName(): string
     {
         return 'test';
     }
@@ -172,7 +172,7 @@ class AbstractDocumentLiveTest extends \PHPUnit_Framework_TestCase
             $address->insert();
         }
 
-        $distinct = AddressDocument::distinct($this->connector, 'line1');
+        $distinct = AddressDocument::getCollection($this->connector)->distinct('line1');
 
         $this->assertCount(5, $distinct);
         $this->assertSame('test0', $distinct[0]);

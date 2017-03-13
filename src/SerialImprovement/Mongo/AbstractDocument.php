@@ -147,10 +147,7 @@ abstract class AbstractDocument
 
     public function insert()
     {
-        $this->connector
-            ->getMongoClient()
-            ->selectDatabase(static::getDatabaseName())
-            ->selectCollection(static::getCollectionName())
+        static::getCollection($this->connector)
             ->insertOne($this->toDocument());
     }
 
@@ -162,10 +159,7 @@ abstract class AbstractDocument
         // remove the _id from the update
         unset($update[self::INTERNAL_PRIMARY_KEY]);
 
-        $this->connector
-            ->getMongoClient()
-            ->selectDatabase(static::getDatabaseName())
-            ->selectCollection(static::getCollectionName())
+        static::getCollection($this->connector)
             ->updateOne([self::INTERNAL_PRIMARY_KEY => $this->_id], ['$set' => $update]);
     }
 
@@ -179,13 +173,7 @@ abstract class AbstractDocument
     {
         $fqn = static::class;
 
-        /** @var AbstractDocument $doc */
-        $doc = new $fqn($connector);
-
-        $cursor = $connector
-            ->getMongoClient()
-            ->selectDatabase($doc::getDatabaseName())
-            ->selectCollection($doc::getCollectionName())
+        $cursor = static::getCollection($connector)
             ->find($criteria, $options);
 
         $results = [];
@@ -206,10 +194,7 @@ abstract class AbstractDocument
         /** @var AbstractDocument $doc */
         $doc = new $fqn($connector);
 
-        $item = $connector
-            ->getMongoClient()
-            ->selectDatabase($doc::getDatabaseName())
-            ->selectCollection($doc::getCollectionName())
+        $item = static::getCollection($connector)
             ->findOne($criteria, $options);
 
         if ($item === null) {
@@ -221,33 +206,12 @@ abstract class AbstractDocument
         return $doc;
     }
 
-    public static function distinct(
-        Connector $connector,
-        string $fieldName,
-        array $filter = [],
-        array $options = []
-    ): array {
-        $fqn = static::class;
-
-        /** @var AbstractDocument $doc */
-        $doc = new $fqn($connector);
-
-        return $connector
-            ->getMongoClient()
-            ->selectDatabase($doc::getDatabaseName())
-            ->selectCollection($doc::getCollectionName())
-            ->distinct($fieldName, $filter, $options);
-    }
-
     /**
      * Delete this object from the database
      */
     public function delete()
     {
-        $this->connector
-            ->getMongoClient()
-            ->selectDatabase(static::getDatabaseName())
-            ->selectCollection(static::getCollectionName())
+        static::getCollection($this->connector)
             ->deleteOne([self::INTERNAL_PRIMARY_KEY => $this->_id]);
     }
 
