@@ -224,9 +224,7 @@ abstract class AbstractDocument
 
     public static function getCollection(Connector $connector): Collection
     {
-        return $connector
-            ->getMongoClient()
-            ->selectDatabase(static::getDatabaseName())
+        return static::getDatabase($connector)
             ->selectCollection(static::getCollectionName());
     }
 
