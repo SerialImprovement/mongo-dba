@@ -3,6 +3,8 @@ namespace SerialImprovement\Mongo;
 
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDatetime;
+use MongoDB\Collection;
+use MongoDB\Database;
 use MongoDB\Model\BSONDocument;
 
 /**
@@ -249,6 +251,21 @@ abstract class AbstractDocument
             ->deleteOne([self::INTERNAL_PRIMARY_KEY => $this->_id]);
     }
 
+    public static function getDatabase(Connector $connector): Database
+    {
+        return $connector
+            ->getMongoClient()
+            ->selectDatabase(static::getDatabaseName());
+    }
+
+    public static function getCollection(Connector $connector): Collection
+    {
+        return $connector
+            ->getMongoClient()
+            ->selectDatabase(static::getDatabaseName())
+            ->selectCollection(static::getCollectionName());
+    }
+
     /**
      * @return string
      */
@@ -270,7 +287,7 @@ abstract class AbstractDocument
      *
      * @return string
      */
-    abstract protected static function getDatabaseName(): string;
+    abstract public static function getDatabaseName(): string;
 
     /**
      * Should return the name of the collection to store this object in
@@ -279,7 +296,7 @@ abstract class AbstractDocument
      *
      * @return string
      */
-    protected static function getCollectionName(): string
+    public static function getCollectionName(): string
     {
         return static::getDocumentName() . 's';
     }
