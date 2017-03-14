@@ -3,6 +3,7 @@ namespace SerialImprovement\Mongo;
 
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDatetime;
+use MongoDB\Client;
 use MongoDB\Collection;
 use MongoDB\Database;
 use MongoDB\Model\BSONDocument;
@@ -18,29 +19,43 @@ use MongoDB\Model\BSONDocument;
  */
 abstract class AbstractDocument
 {
-    private $attributes = [];
-    private $fields = [];
+    protected $attributes = [];
+    protected $fields = [];
 
     const INTERNAL_FIELD_DATE = 'createdDate';
     const INTERNAL_PRIMARY_KEY = '_id';
     const INTERNAL_FIELD_UPDATED_DATE = 'updatedDate';
     const INTERNAL_EMBEDDED_CLASS_FIELD = 'embeddedClass';
 
-    /** @var Connector */
-    protected $connector;
+    /** @var Client */
+    protected static $client;
 
-    /**
-     * Post constructor.
-     * @param Connector $connector
-     */
-    public function __construct(Connector $connector)
+    public function __construct()
     {
-        $this->connector = $connector;
+        static::assertClientSet();
 
         $this->fields = $this->getDefaultFields();
         $this->fields[] = self::INTERNAL_PRIMARY_KEY;
         $this->fields[] = self::INTERNAL_FIELD_DATE;
         $this->fields[] = self::INTERNAL_FIELD_UPDATED_DATE;
+    }
+
+    protected static function getClient(): Client
+    {
+        static::assertClientSet();
+        return static::$client;
+    }
+
+    public static function setClient(Client $client)
+    {
+        static::$client = $client;
+    }
+
+    protected static function assertClientSet()
+    {
+        if (!(static::$client instanceof Client)) {
+            throw new \RuntimeException('Client was not set. Please use AbstractDocument::setClient');
+        }
     }
 
     public function __set($name, $value)
@@ -96,7 +111,7 @@ abstract class AbstractDocument
                 if ($isEmbedded) {
                     $embeddedClass = $document[$field][self::INTERNAL_EMBEDDED_CLASS_FIELD];
 
-                    $this->{$field} = new $embeddedClass($this->connector);
+                    $this->{$field} = new $embeddedClass($this->client);
                     $this->{$field}->fromDocument($document[$field]);
                 } else {
                     $this->{$field} = $document[$field];
@@ -147,7 +162,7 @@ abstract class AbstractDocument
 
     public function insert()
     {
-        static::getCollection($this->connector)
+        static::getCollection()
             ->insertOne($this->toDocument());
     }
 
@@ -159,27 +174,26 @@ abstract class AbstractDocument
         // remove the _id from the update
         unset($update[self::INTERNAL_PRIMARY_KEY]);
 
-        static::getCollection($this->connector)
+        static::getCollection()
             ->updateOne([self::INTERNAL_PRIMARY_KEY => $this->_id], ['$set' => $update]);
     }
 
     /**
-     * @param Connector $connector
      * @param $criteria
      * @param $options
      * @return AbstractDocument[]
      */
-    public static function find(Connector $connector, array $criteria = [], array $options = []): array
+    public static function find(array $criteria = [], array $options = []): array
     {
         $fqn = static::class;
 
-        $cursor = static::getCollection($connector)
+        $cursor = static::getCollection()
             ->find($criteria, $options);
 
         $results = [];
         foreach ($cursor as $item) {
             /** @var AbstractDocument $doc */
-            $doc = new $fqn($connector);
+            $doc = new $fqn();
             $doc->fromDocument($item);
             $results[] = $doc;
         }
@@ -187,14 +201,14 @@ abstract class AbstractDocument
         return $results;
     }
 
-    public static function findOne(Connector $connector, array $criteria = [], array $options = []): AbstractDocument
+    public static function findOne(array $criteria = [], array $options = []): AbstractDocument
     {
         $fqn = static::class;
 
         /** @var AbstractDocument $doc */
-        $doc = new $fqn($connector);
+        $doc = new $fqn();
 
-        $item = static::getCollection($connector)
+        $item = static::getCollection()
             ->findOne($criteria, $options);
 
         if ($item === null) {
@@ -211,20 +225,19 @@ abstract class AbstractDocument
      */
     public function delete()
     {
-        static::getCollection($this->connector)
+        static::getCollection()
             ->deleteOne([self::INTERNAL_PRIMARY_KEY => $this->_id]);
     }
 
-    public static function getDatabase(Connector $connector): Database
+    public static function getDatabase(): Database
     {
-        return $connector
-            ->getMongoClient()
+        return static::getClient()
             ->selectDatabase(static::getDatabaseName());
     }
 
-    public static function getCollection(Connector $connector): Collection
+    public static function getCollection(): Collection
     {
-        return static::getDatabase($connector)
+        return static::getDatabase()
             ->selectCollection(static::getCollectionName());
     }
 

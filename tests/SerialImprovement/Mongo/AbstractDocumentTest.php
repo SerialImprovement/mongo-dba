@@ -59,6 +59,12 @@ class AddressDocument extends AbstractDocument {
 
 class AbstractDocumentTest extends \PHPUnit_Framework_TestCase
 {
+    protected function setUp()
+    {
+        parent::setUp();
+        AbstractDocument::setClient($this->buildMongoClientMock());
+    }
+
     /**
      * @expectedException \RuntimeException
      */
@@ -213,12 +219,12 @@ class AbstractDocumentTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @return Connector
+     * @return Client
      */
     private function buildMongoClientMock()
     {
         /** @var Client $clientMock */
         $clientMock = $this->getMockBuilder('MongoDB\Client')->getMock();
-        return new Connector($clientMock);
+        return $clientMock;
     }
 }
