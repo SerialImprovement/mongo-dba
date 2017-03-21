@@ -73,11 +73,15 @@ abstract class AbstractDocument
                 $isEmbedded = $couldBeEmbedded &&
                     isset($document[$field][self::INTERNAL_EMBEDDED_CLASS_FIELD]);
 
+                $isReference = isset($document['$ref']);
+
                 if ($isEmbedded) {
                     $embeddedClass = $document[$field][self::INTERNAL_EMBEDDED_CLASS_FIELD];
 
                     $this->{$field} = new $embeddedClass($this->connector);
                     $this->{$field}->fromDocument($document[$field]);
+                } elseif ($isReference) {
+                    $this->{$field} = $this->resolveReference($document[$field]);
                 } else {
                     $this->{$field} = $document[$field];
                 }
@@ -98,14 +102,47 @@ abstract class AbstractDocument
         $doc = [];
         foreach ($this->attributes as $key => $value) {
             if ($value instanceof AbstractDocument) {
-                $doc[$key] = $value->toDocument();
-                $doc[$key][self::INTERNAL_EMBEDDED_CLASS_FIELD] = get_class($value);
+                $doc[$key] = $value->toEmbed();
             } else {
                 $doc[$key] = $value;
             }
         }
 
         return $doc;
+    }
+
+    /**
+     * Gets the embed version of this document
+     *
+     * @return array
+     */
+    public function toEmbed(): array
+    {
+        $embed = $this->toDocument();
+        $embed[self::INTERNAL_EMBEDDED_CLASS_FIELD] = get_class($this);
+
+        return $embed;
+    }
+
+    /**
+     * Gets a DBRef for this document
+     *
+     * @return array
+     */
+    public function toReference(): array
+    {
+        if (!isset($this->attributes[self::INTERNAL_PRIMARY_KEY])) {
+            throw new \RuntimeException('No primary key set, insert or load object first');
+        }
+
+        $reference = [
+            '$ref' => $this->getDocumentName() . 's',
+            '$id' => $this->{self::INTERNAL_PRIMARY_KEY},
+            '$db' => $this->getDatabaseName(),
+            'siClass' => get_class($this),
+        ];
+
+        return $reference;
     }
 
     public function toArray()
@@ -123,6 +160,19 @@ abstract class AbstractDocument
             }
         }
         return $array;
+    }
+
+    protected function resolveReference($reference)
+    {
+        if (!isset($reference['$ref'])) {
+            throw new \RuntimeException('This object is not a reference');
+        }
+
+        $class = $reference['siClass'];
+
+        return call_user_func($class . '::findOne', [
+            self::INTERNAL_PRIMARY_KEY => $reference['$id']
+        ], []);
     }
 
     public function insert()
