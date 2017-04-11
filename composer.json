@@ -1,6 +1,6 @@
 {
     "name": "serialimprovement/mongo-dba",
-    "version": "0.2.1",
+    "version": "0.3.0",
     "description": "A very small mongo dba with a simple model class",
     "minimum-stability": "dev",
     "license": "proprietary",
