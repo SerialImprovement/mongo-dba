@@ -28,7 +28,13 @@ abstract class AbstractDocument
     const INTERNAL_EMBEDDED_CLASS_FIELD = 'embeddedClass';
 
     // ensures that BSONArrays are cast to regular php arrays on find operations
-    const ARRAY_TYPE_MAP = ['typeMap' => ['root' => 'array', 'array' => 'array']];
+    const ARRAY_TYPE_MAP = [
+        'typeMap' => [
+            'root' => 'array',
+            'array' => 'array',
+            'document' => 'array',
+        ]
+    ];
 
     /** @var Client */
     protected static $client;

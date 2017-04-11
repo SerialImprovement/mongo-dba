@@ -218,6 +218,27 @@ class AbstractDocumentLiveTest extends \PHPUnit_Framework_TestCase
         $this->assertInternalType('array', $doc->banana[2], 'Banana should be a regular php array');
     }
 
+    public function testEmbeddedObjects()
+    {
+        $doc = new ConcreteDocument();
+        $address = new AddressDocument();
+        $address->fromDocument([
+            'line1' => 'test',
+            'line2' => 'test',
+            'state' => 'cambridge',
+            'city' => 'MA',
+            'zip' => '12432',
+        ]);
+
+        $doc->banana = $address;
+        $doc->insert();
+
+        $doc = ConcreteDocument::findOne(['_id' => $doc->_id]);
+
+        $this->assertSame(AddressDocument::class, get_class($doc->banana));
+        $this->assertSame('cambridge', $doc->banana->state);
+    }
+
     /**
      * @return Client
      */
