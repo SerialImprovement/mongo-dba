@@ -175,6 +175,49 @@ class AbstractDocumentLiveTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('test4', $distinct[4]);
     }
 
+    public function testArraysAreNotBSONArray()
+    {
+        $doc = new ConcreteDocument();
+        $doc->banana = [
+            1,
+            2,
+            3
+        ];
+
+        $doc->insert();
+
+        $doc = ConcreteDocument::findOne(['_id' => $doc->_id]);
+
+        $this->assertCount(3, $doc->banana);
+        $this->assertInternalType('array', $doc->banana, 'Banana should be a regular php array');
+    }
+
+    public function testArraysAreNotBSONArrayNested()
+    {
+        $doc = new ConcreteDocument();
+        $doc->banana = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+        ];
+
+        $doc->insert();
+
+        $doc = ConcreteDocument::findOne(['_id' => $doc->_id]);
+
+        $this->assertCount(3, $doc->banana);
+        $this->assertInternalType('array', $doc->banana, 'Banana should be a regular php array');
+
+        $this->assertCount(3, $doc->banana[0]);
+        $this->assertInternalType('array', $doc->banana[0], 'Banana should be a regular php array');
+
+        $this->assertCount(3, $doc->banana[1]);
+        $this->assertInternalType('array', $doc->banana[1], 'Banana should be a regular php array');
+
+        $this->assertCount(3, $doc->banana[2]);
+        $this->assertInternalType('array', $doc->banana[2], 'Banana should be a regular php array');
+    }
+
     /**
      * @return Client
      */

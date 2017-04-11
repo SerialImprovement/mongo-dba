@@ -27,6 +27,9 @@ abstract class AbstractDocument
     const INTERNAL_FIELD_UPDATED_DATE = 'updatedDate';
     const INTERNAL_EMBEDDED_CLASS_FIELD = 'embeddedClass';
 
+    // ensures that BSONArrays are cast to regular php arrays on find operations
+    const ARRAY_TYPE_MAP = ['typeMap' => ['root' => 'array', 'array' => 'array']];
+
     /** @var Client */
     protected static $client;
 
@@ -188,7 +191,7 @@ abstract class AbstractDocument
         $fqn = static::class;
 
         $cursor = static::getCollection()
-            ->find($criteria, $options);
+            ->find($criteria, $options + self::ARRAY_TYPE_MAP);
 
         $results = [];
         foreach ($cursor as $item) {
@@ -209,7 +212,8 @@ abstract class AbstractDocument
         $doc = new $fqn();
 
         $item = static::getCollection()
-            ->findOne($criteria, $options);
+            ->findOne($criteria, $options + self::ARRAY_TYPE_MAP);
+
 
         if ($item === null) {
             throw new \RuntimeException('Document not found');
