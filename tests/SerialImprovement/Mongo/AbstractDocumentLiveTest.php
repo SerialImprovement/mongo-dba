@@ -4,13 +4,16 @@ namespace Testing\Live;
 use MongoDB\BSON\ObjectID;
 use MongoDB\Client;
 use SerialImprovement\Mongo\AbstractDocument;
+use SerialImprovement\Mongo\HasOne;
 
 /**
  * Because we are testing an abstract class we create a simple
  * concrete version with test values
  *
- * Class ConcreteDocument
  * @property string banana
+ * @property AddressDocument address
+ *
+ * Class ConcreteDocument
  * @package Bigtallbill\DarkWeb\Documents
  */
 class ConcreteDocument extends AbstractDocument {
@@ -38,6 +41,16 @@ class ConcreteDocument extends AbstractDocument {
     }
 }
 
+/**
+ * @property string line1
+ * @property string line2
+ * @property string state
+ * @property string city
+ * @property string zip
+ *
+ * Class AddressDocument
+ * @package Testing\Live
+ */
 class AddressDocument extends AbstractDocument {
     protected function getDefaultFields(): array
     {
@@ -50,6 +63,43 @@ class AddressDocument extends AbstractDocument {
         ];
     }
 
+    public static function getDatabaseName(): string
+    {
+        return 'test';
+    }
+}
+
+/**
+ * @property string          name
+ * @property AddressDocument address
+ *
+ * Class PersonDocument
+ * @package Testing\Live
+ */
+class PersonDocument extends AbstractDocument {
+    /**
+     * Should return the names of the fields you wish your document to contain
+     *
+     * @return string[]
+     */
+    protected function getDefaultFields(): array
+    {
+        return [
+            'name',
+            'address'
+        ];
+    }
+
+    public function address(): HasOne
+    {
+        return $this->hasOne(AddressDocument::class, 'address');
+    }
+
+    /**
+     * Should return the name of the database to store this object in
+     *
+     * @return string
+     */
     public static function getDatabaseName(): string
     {
         return 'test';
@@ -203,6 +253,7 @@ class AbstractDocumentLiveTest extends \PHPUnit_Framework_TestCase
 
         $doc->insert();
 
+        /** @var ConcreteDocument $doc */
         $doc = ConcreteDocument::findOne(['_id' => $doc->_id]);
 
         $this->assertCount(3, $doc->banana);
@@ -237,6 +288,67 @@ class AbstractDocumentLiveTest extends \PHPUnit_Framework_TestCase
 
         $this->assertSame(AddressDocument::class, get_class($doc->banana));
         $this->assertSame('cambridge', $doc->banana->state);
+    }
+
+    public function testHasOneReferences()
+    {
+        $person = new PersonDocument();
+        $address = new AddressDocument();
+        $address->fromDocument([
+            'line1' => 'test',
+            'line2' => 'test',
+            'state' => 'cambridge',
+            'city' => 'MA',
+            'zip' => '12432',
+        ]);
+        $address->insert();
+
+        $person->name = 'joanne';
+        $person->address()->associate($address);
+
+        $person->insert();
+
+        /** @var PersonDocument $person */
+        $person = PersonDocument::findOne(['_id' => $person->_id]);
+
+        $this->assertSame(AddressDocument::class, get_class($person->address));
+        $this->assertSame('cambridge', $person->address->state);
+    }
+
+    public function testHasOneReferencesUpdatingReference()
+    {
+        $person = new PersonDocument();
+        $address = new AddressDocument();
+        $address->fromDocument([
+            'line1' => 'test',
+            'line2' => 'test',
+            'state' => 'cambridge',
+            'city' => 'MA',
+            'zip' => '12432',
+        ]);
+        $address->insert();
+
+        $person->name = 'joanne';
+        $person->address()->associate($address);
+
+        $person->insert();
+
+        /** @var PersonDocument $person */
+        $person = PersonDocument::findOne(['_id' => $person->_id]);
+
+        $this->assertSame(AddressDocument::class, get_class($person->address));
+        $this->assertSame('cambridge', $person->address->state);
+
+        $person->address->state = 'MA';
+        $person->address->city = 'cambridge';
+        $person->address->update();
+
+        /** @var PersonDocument $person */
+        $person = PersonDocument::findOne(['_id' => $person->_id]);
+
+        $this->assertSame(AddressDocument::class, get_class($person->address));
+        $this->assertSame('MA', $person->address->state);
+        $this->assertSame('cambridge', $person->address->city);
     }
 
     /**

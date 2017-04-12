@@ -99,7 +99,13 @@ abstract class AbstractDocument
             return $default;
         }
 
-        return $this->attributes[$name];
+        $attribute = $this->attributes[$name];
+
+        if ($attribute instanceof AbstractReference) {
+            $attribute = $attribute->resolve();
+        }
+
+        return $attribute;
     }
 
     public function fromDocument($document)
@@ -118,8 +124,15 @@ abstract class AbstractDocument
                 if ($isEmbedded) {
                     $embeddedClass = $document[$field][self::INTERNAL_EMBEDDED_CLASS_FIELD];
 
-                    $this->{$field} = new $embeddedClass($this->client);
-                    $this->{$field}->fromDocument($document[$field]);
+                    /** @var AbstractDocument $embeddedDocument */
+                    $embeddedDocument = new $embeddedClass();
+                    $embeddedDocument->fromDocument($document[$field]);
+
+                    if ($embeddedDocument instanceof AbstractReference) {
+                        $embeddedDocument->resolve();
+                    }
+
+                    $this->{$field} = $embeddedDocument;
                 } else {
                     $this->{$field} = $document[$field];
                 }
@@ -161,6 +174,15 @@ abstract class AbstractDocument
             }
         }
         return $array;
+    }
+
+    public function hasOne(string $documentClass, string $localKey): HasOne
+    {
+        $hasOne = new HasOne();
+        $hasOne->className = $documentClass;
+        $hasOne->localKey = $localKey;
+        $this->{$localKey} = $hasOne;
+        return $hasOne;
     }
 
     public function insert()
