@@ -110,8 +110,7 @@ class AbstractDocumentTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('createdDate', $actual, 'a date should be added if not specified');
         $this->assertInstanceOf('MongoDB\BSON\UTCDatetime', $actual['createdDate']);
 
-        $this->assertArrayHasKey('_id', $actual, 'the _id should be added if not specified');
-        $this->assertInstanceOf('MongoDB\BSON\ObjectID', $actual['_id']);
+        $this->assertArrayNotHasKey('_id', $actual, 'the _id should not be added until inserted');
     }
 
     public function testToArray()
@@ -184,8 +183,7 @@ class AbstractDocumentTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('createdDate', $actual, 'a date should be added if not specified');
         $this->assertInstanceOf('MongoDB\BSON\UTCDatetime', $actual['createdDate']);
 
-        $this->assertArrayHasKey('_id', $actual, 'the _id should be added if not specified');
-        $this->assertInstanceOf('MongoDB\BSON\ObjectID', $actual['_id']);
+        $this->assertArrayNotHasKey('_id', $actual, 'the _id should not be added until inserted');
     }
 
     public function testToArrayEmbedded()

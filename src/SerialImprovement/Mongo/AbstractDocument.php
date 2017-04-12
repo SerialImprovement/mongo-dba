@@ -133,10 +133,6 @@ abstract class AbstractDocument
             $this->attributes[self::INTERNAL_FIELD_DATE] = new UTCDatetime(round(microtime(true) * 1000));
         }
 
-        if (!isset($this->attributes[self::INTERNAL_PRIMARY_KEY])) {
-            $this->attributes[self::INTERNAL_PRIMARY_KEY] = new ObjectID();
-        }
-
         $doc = [];
         foreach ($this->attributes as $key => $value) {
             if ($value instanceof AbstractDocument) {
@@ -169,8 +165,10 @@ abstract class AbstractDocument
 
     public function insert()
     {
-        static::getCollection()
+        $result = static::getCollection()
             ->insertOne($this->toDocument());
+
+        $this->attributes[self::INTERNAL_PRIMARY_KEY] = $result->getInsertedId();
     }
 
     public function update()
