@@ -41,8 +41,6 @@ abstract class AbstractDocument
 
     public function __construct()
     {
-        static::assertClientSet();
-
         $this->fields = $this->getDefaultFields();
         $this->fields[] = self::INTERNAL_PRIMARY_KEY;
         $this->fields[] = self::INTERNAL_FIELD_DATE;
