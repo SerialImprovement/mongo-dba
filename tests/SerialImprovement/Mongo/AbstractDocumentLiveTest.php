@@ -239,6 +239,66 @@ class AbstractDocumentLiveTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('cambridge', $doc->banana->state);
     }
 
+    public function testToDocument()
+    {
+        $address = new AddressDocument();
+        $address->fromDocument([
+            'line1' => 'test',
+            'line2' => 'test',
+            'state' => 'cambridge',
+            'city' => 'MA',
+            'zip' => '12432',
+        ]);
+
+        $document = $address->toDocument(AbstractDocument::OPT_ONLY_MODIFIED);
+        $this->assertCount(1, $document, 'only the updatedDate field should be modified after loading');
+
+        $address->line1 = 'foo';
+        $address->line2 = 'bar';
+        $address->state = 'cambridge';
+
+        $document = $address->toDocument(AbstractDocument::OPT_ONLY_MODIFIED);
+        $this->assertCount(
+            3,
+            $document,
+            'fields which have been modified should be recognised'
+        );
+        $this->assertArrayHasKey('line1', $document);
+        $this->assertArrayHasKey('line2', $document);
+        $this->assertArrayNotHasKey('state', $document, 'state is not changed from its original value so it isn\'t counted');
+
+        $document = $address->toDocument();
+        $this->assertCount(
+            6,
+            $document,
+            'All fields should be encoded into the document'
+        );
+    }
+
+    public function testToDocumentEmbedded()
+    {
+        $doc = new ConcreteDocument();
+        $address = new AddressDocument();
+        $address->fromDocument([
+            'line1' => 'test',
+            'line2' => 'test',
+            'state' => 'cambridge',
+            'city' => 'MA',
+            'zip' => '12432',
+        ]);
+
+        $doc->banana = $address;
+        $doc->insert();
+
+        /** @var ConcreteDocument $doc */
+        $doc = ConcreteDocument::findOne(['_id' => $doc->_id]);
+
+        $doc->banana->line1 = 'foo';
+
+        $modified = $doc->toDocument(AbstractDocument::OPT_ONLY_MODIFIED);
+        $this->assertArrayHasKey('banana', $modified, 'embedded objects should be checked for modifications');
+    }
+
     /**
      * @return Client
      */

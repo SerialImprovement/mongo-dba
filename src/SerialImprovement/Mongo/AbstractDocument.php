@@ -27,6 +27,8 @@ abstract class AbstractDocument
     const INTERNAL_FIELD_UPDATED_DATE = 'updatedDate';
     const INTERNAL_EMBEDDED_CLASS_FIELD = 'embeddedClass';
 
+    const OPT_ONLY_MODIFIED = 0010;
+
     // ensures that BSONArrays are cast to regular php arrays on find operations
     const ARRAY_TYPE_MAP = [
         'typeMap' => [
@@ -38,6 +40,12 @@ abstract class AbstractDocument
 
     /** @var Client */
     protected static $client;
+
+    /** @var array A hash where keys are field names and the value is just to signify a change occurred */
+    protected $modifiedAttributes = [];
+
+    /** @var AbstractDocument[] */
+    protected $subscribers = [];
 
     public function __construct()
     {
@@ -78,6 +86,15 @@ abstract class AbstractDocument
     {
         if (!in_array($name, $this->fields)) {
             throw new \RuntimeException("$name does not exist in fields");
+        }
+
+        if ($this->get($name) !== $value) {
+            $this->modifiedAttributes[$name] = 1;
+            $this->publish();
+        }
+
+        if ($value instanceof AbstractDocument) {
+            $value->subscribe($name, $this);
         }
 
         $this->attributes[$name] = $value;
@@ -125,19 +142,39 @@ abstract class AbstractDocument
                 }
             }
         }
+
+        // reset modified attributes so only changes are detected
+        $this->modifiedAttributes = [];
     }
 
-    public function toDocument()
+    /**
+     * @param int $options A bitmask of options from the self::OPT_* family
+     *
+     * @return array
+     */
+    public function toDocument(int $options = 0)
     {
         if (!isset($this->attributes[self::INTERNAL_FIELD_DATE])) {
-            $this->attributes[self::INTERNAL_FIELD_DATE] = new UTCDatetime(round(microtime(true) * 1000));
+            $this->set(self::INTERNAL_FIELD_DATE, new UTCDatetime(round(microtime(true) * 1000)));
+        }
+
+        if ($options & self::OPT_ONLY_MODIFIED) {
+            $properties = [];
+            foreach ($this->modifiedAttributes as $field => $modified) {
+                $properties[$field] = $this->get($field);
+            }
+        } else {
+            $properties = $this->attributes;
         }
 
         $doc = [];
-        foreach ($this->attributes as $key => $value) {
+        foreach ($properties as $key => $value) {
             if ($value instanceof AbstractDocument) {
-                $doc[$key] = $value->toDocument();
-                $doc[$key][self::INTERNAL_EMBEDDED_CLASS_FIELD] = get_class($value);
+                $embedded = $value->toDocument($options);
+                if (!empty($embedded)) {
+                    $doc[$key] = $embedded;
+                    $doc[$key][self::INTERNAL_EMBEDDED_CLASS_FIELD] = get_class($value);
+                }
             } else {
                 $doc[$key] = $value;
             }
@@ -173,8 +210,8 @@ abstract class AbstractDocument
 
     public function update()
     {
-        $update = $this->toDocument();
-        $update[self::INTERNAL_FIELD_UPDATED_DATE] = new UTCDatetime(round(microtime(true) * 1000));
+        $this->set(self::INTERNAL_FIELD_UPDATED_DATE, new UTCDatetime());
+        $update = $this->toDocument(self::OPT_ONLY_MODIFIED);
 
         // remove the _id from the update
         unset($update[self::INTERNAL_PRIMARY_KEY]);
@@ -280,5 +317,29 @@ abstract class AbstractDocument
     public static function getCollectionName(): string
     {
         return static::getDocumentName() . 's';
+    }
+
+    //----------------------------
+    // Change Detector
+    //----------------------------
+
+    protected function wasModified($field)
+    {
+        $this->modifiedAttributes[$field] = 1;
+    }
+
+    protected function subscribe(string $field, AbstractDocument $document)
+    {
+        $this->subscribers[$field] = $document;
+    }
+
+    /**
+     * Update subscribers
+     */
+    protected function publish()
+    {
+        foreach ($this->subscribers as $field => $subscription) {
+            $subscription->wasModified($field);
+        }
     }
 }
