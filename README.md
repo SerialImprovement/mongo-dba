@@ -7,9 +7,16 @@ Features
 --------
 
 1. Fields
-1. Light wrappers of `find`, `findOne`, `insert`, `update` and `delete` operations
-1. Automatic `_id`, `createdDate`, `updatedDate` fields
-2. EmbedsOne sub-documents
+2. Light wrappers of `find`, `findOne`, `insert`, `update` and `delete` operations
+3. Automatic `_id`, `createdDate`, `updatedDate` fields
+4. EmbedsOne sub-documents
+
+Not Implemented
+---------------
+
+1. Embeds many
+2. References (should these be supported?)
+3. Datatype checks/conversions
 
 
 [![Build Status](https://travis-ci.org/SerialImprovement/mongo-dba.svg?branch=master)](https://travis-ci.org/SerialImprovement/mongo-dba)
@@ -33,8 +40,9 @@ Add this to composer.json:
 ]
 ```
 and then require as usual:
+
 ```
-"serialimprovement/mongo-dba": "dev-master"
+"serialimprovement/mongo-dba": "0.3.2"
 ```
 
 Usage
@@ -63,18 +71,20 @@ class Address extends AbstractDocument
 }
 ```
 
+The collection name will be dynamically generated unless you override `getCollectionName`.
+Its a good idea to create a single base descendant of `AbstractDocument` to set the
+database name if you use a single db for your app.
+
 Creating an instance:
 
 ```
 // connect to mongo
 $client = new \MongoDB\Client();
 
-// create connector class to manage client
-// the connector is what you provide to new
-// document instances
-$connector = new Connector($client);
+// statically set client for all instances
+AbstractDocument::setClient($client);
 
-$address = new Address($connector);
+$address = new Address();
 $address->line1 = 'test';
 $address->line2 = 'test';
 $address->state = 'cambridge';
@@ -99,3 +109,17 @@ The resulting document might look like this:
     "createdDate" : ISODate("2016-05-26T03:19:00.988Z")
 }
 ```
+
+Embedded Documents
+------------------
+
+### Embeds One
+
+As simple as setting a property of a document with the instance of another.
+
+Metadata is stored along with the class name (`embeddedClass` field) to resolve the class once reloaded from the database.
+You must update `embeddedClass` in your database if you decide to refactor your code.
+
+### Embeds Many
+
+Not currently implemented
