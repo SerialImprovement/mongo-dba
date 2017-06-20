@@ -42,7 +42,7 @@ Add this to composer.json:
 and then require as usual:
 
 ```
-"serialimprovement/mongo-dba": "0.3.2"
+"serialimprovement/mongo-dba": "0.3.3"
 ```
 
 Usage

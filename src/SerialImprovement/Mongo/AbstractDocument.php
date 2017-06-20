@@ -170,7 +170,7 @@ abstract class AbstractDocument
         $doc = [];
         foreach ($properties as $key => $value) {
             if ($value instanceof AbstractDocument) {
-                $embedded = $value->toDocument($options);
+                $embedded = $value->toDocument();
                 if (!empty($embedded)) {
                     $doc[$key] = $embedded;
                     $doc[$key][self::INTERNAL_EMBEDDED_CLASS_FIELD] = get_class($value);
