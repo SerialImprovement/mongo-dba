@@ -299,6 +299,66 @@ class AbstractDocumentLiveTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('banana', $modified, 'embedded objects should be checked for modifications');
     }
 
+    public function testToDocumentEmbeddedHashTable()
+    {
+        $doc = new ConcreteDocument();
+        $address = new AddressDocument();
+        $address->fromDocument([
+            'line1' => 'test',
+            'line2' => 'test',
+            'state' => 'cambridge',
+            'city' => 'MA',
+            'zip' => '12432',
+        ]);
+
+        $doc->banana = [
+            'foo' => $address
+        ];
+
+        $document = $doc->toDocument();
+        $this->assertArrayHasKey('banana', $document);
+        $this->assertArrayHasKey('foo', $document['banana']);
+        $this->assertArrayHasKey(AbstractDocument::INTERNAL_EMBEDDED_CLASS_FIELD, $document['banana']['foo'], 'document should be embedded in array');
+
+        $doc->insert();
+
+        /** @var ConcreteDocument $doc */
+        $doc = ConcreteDocument::findOne(['_id' => $doc->_id]);
+        $this->assertInternalType('array', $doc->banana);
+        $this->assertArrayHasKey('foo', $doc->banana);
+        $this->assertInstanceOf(AddressDocument::class, $doc->banana['foo']);
+    }
+
+    public function testToDocumentEmbeddedSeriesArray()
+    {
+        $doc = new ConcreteDocument();
+        $address = new AddressDocument();
+        $address->fromDocument([
+            'line1' => 'test',
+            'line2' => 'test',
+            'state' => 'cambridge',
+            'city' => 'MA',
+            'zip' => '12432',
+        ]);
+
+        $doc->banana = [
+            $address
+        ];
+
+        $document = $doc->toDocument();
+        $this->assertArrayHasKey('banana', $document);
+        $this->assertArrayHasKey(0, $document['banana']);
+        $this->assertArrayHasKey(AbstractDocument::INTERNAL_EMBEDDED_CLASS_FIELD, $document['banana'][0], 'document should be embedded in array');
+
+        $doc->insert();
+
+        /** @var ConcreteDocument $doc */
+        $doc = ConcreteDocument::findOne(['_id' => $doc->_id]);
+        $this->assertInternalType('array', $doc->banana);
+        $this->assertArrayHasKey(0, $doc->banana);
+        $this->assertInstanceOf(AddressDocument::class, $doc->banana[0]);
+    }
+
     /**
      * @return Client
      */

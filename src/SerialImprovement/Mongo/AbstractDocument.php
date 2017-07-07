@@ -135,8 +135,21 @@ abstract class AbstractDocument
                 if ($isEmbedded) {
                     $embeddedClass = $document[$field][self::INTERNAL_EMBEDDED_CLASS_FIELD];
 
-                    $this->{$field} = new $embeddedClass($this->client);
+                    $this->{$field} = new $embeddedClass();
                     $this->{$field}->fromDocument($document[$field]);
+                } elseif(is_array($document[$field])) {
+                    // load documents in single dimensional arrays
+                    $newArr = [];
+                    foreach ($document[$field] as $key => $value) {
+                        if (isset($value[self::INTERNAL_EMBEDDED_CLASS_FIELD])) {
+                            $embeddedClass = $value[self::INTERNAL_EMBEDDED_CLASS_FIELD];
+                            $newArr[$key] = new $embeddedClass();
+                            $newArr[$key]->fromDocument($value);
+                        } else {
+                            $newArr[$key] = $value;
+                        }
+                    }
+                    $this->{$field} = $newArr;
                 } else {
                     $this->{$field} = $document[$field];
                 }
@@ -175,6 +188,19 @@ abstract class AbstractDocument
                     $doc[$key] = $embedded;
                     $doc[$key][self::INTERNAL_EMBEDDED_CLASS_FIELD] = get_class($value);
                 }
+            } elseif(is_array($value)) {
+                // embed documents in single dimensional arrays
+                $newArr = [];
+                foreach ($value as $deepKey => $deepValue) {
+                    if ($deepValue instanceof AbstractDocument) {
+                        $deepValueEmbedded = $deepValue->toDocument();
+                        $newArr[$deepKey] = $deepValueEmbedded;
+                        $newArr[$deepKey][self::INTERNAL_EMBEDDED_CLASS_FIELD] = get_class($deepValue);
+                    } else {
+                        $newArr[$deepKey] = $deepValue;
+                    }
+                }
+                $doc[$key] = $newArr;
             } else {
                 $doc[$key] = $value;
             }
