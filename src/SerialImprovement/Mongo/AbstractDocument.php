@@ -141,7 +141,7 @@ abstract class AbstractDocument
                     // load documents in single dimensional arrays
                     $newArr = [];
                     foreach ($document[$field] as $key => $value) {
-                        if (isset($value[self::INTERNAL_EMBEDDED_CLASS_FIELD])) {
+                        if (is_array($value) && isset($value[self::INTERNAL_EMBEDDED_CLASS_FIELD])) {
                             $embeddedClass = $value[self::INTERNAL_EMBEDDED_CLASS_FIELD];
                             $newArr[$key] = new $embeddedClass();
                             $newArr[$key]->fromDocument($value);

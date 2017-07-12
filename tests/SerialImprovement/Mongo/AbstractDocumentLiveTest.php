@@ -359,6 +359,35 @@ class AbstractDocumentLiveTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf(AddressDocument::class, $doc->banana[0]);
     }
 
+    public function testToDocumentEmbeddedSeriesArrayObjectIDs()
+    {
+        $doc = new ConcreteDocument();
+
+        $doc->banana = [
+            new ObjectID(),
+            new ObjectID(),
+            new ObjectID(),
+            new ObjectID(),
+            new ObjectID(),
+        ];
+
+        $document = $doc->toDocument();
+        $this->assertArrayHasKey('banana', $document);
+        $this->assertArrayHasKey(0, $document['banana']);
+        $this->assertCount(5, $document['banana']);
+
+        $doc->insert();
+
+        /** @var ConcreteDocument $doc */
+        $doc = ConcreteDocument::findOne(['_id' => $doc->_id]);
+        $this->assertInternalType('array', $doc->banana);
+        $this->assertArrayHasKey(0, $doc->banana);
+
+        foreach ($doc->banana as $item) {
+            $this->assertInstanceOf(ObjectID::class, $item);
+        }
+    }
+
     /**
      * @return Client
      */
