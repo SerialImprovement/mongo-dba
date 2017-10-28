@@ -158,6 +158,39 @@ class AbstractDocumentLiveTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('MA', $address->state);
     }
 
+    public function testUpdateEmbedded()
+    {
+        $address = new AddressDocument();
+        $address->fromDocument([
+            'line1' => 'test',
+            'line2' => 'test',
+            'state' => 'cambridge',
+            'city' => 'MA',
+            'zip' => '12432',
+        ]);
+
+        $concrete = new ConcreteDocument();
+        $concrete->banana = $address;
+
+        $concrete->insert();
+
+        // finally get a fresh one from the db
+        $concrete = ConcreteDocument::findOne(['_id' => $concrete->_id]);
+
+        // change embedded object
+        $concrete->banana->city = 'cambridge';
+        $concrete->banana->state = 'MA';
+
+        $concrete->update();
+
+        // finally get a fresh one from the db
+        $concrete = ConcreteDocument::findOne(['_id' => $concrete->_id]);
+
+        $this->assertNotNull($concrete);
+        $this->assertEquals('cambridge', $concrete->banana->city);
+        $this->assertEquals('MA', $concrete->banana->state);
+    }
+
     public function testDistinct()
     {
         for ($i = 0; $i < 5; $i++) {
