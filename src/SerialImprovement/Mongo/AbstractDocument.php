@@ -239,6 +239,19 @@ abstract class AbstractDocument
         $this->set(self::INTERNAL_FIELD_UPDATED_DATE, new UTCDatetime());
         $update = $this->toDocument(self::OPT_ONLY_MODIFIED);
 
+        // update only changed nested fields
+        foreach (array_keys($this->modifiedAttributes) as $modifiedField) {
+            if ($this->{$modifiedField} instanceof AbstractDocument) {
+                $values = $update[$modifiedField];
+                unset($update[$modifiedField]);
+
+                $deepModified = $this->{$modifiedField}->modifiedAttributes;
+                foreach (array_keys($deepModified) as $deepKey) {
+                    $update[$modifiedField . '.' . $deepKey] = $values[$deepKey];
+                }
+            }
+        }
+
         // remove the _id from the update
         unset($update[self::INTERNAL_PRIMARY_KEY]);
 
