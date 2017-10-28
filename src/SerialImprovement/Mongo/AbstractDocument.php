@@ -234,7 +234,7 @@ abstract class AbstractDocument
         $this->attributes[self::INTERNAL_PRIMARY_KEY] = $result->getInsertedId();
     }
 
-    public function update()
+    public function update($options = [])
     {
         $this->set(self::INTERNAL_FIELD_UPDATED_DATE, new UTCDatetime());
         $update = $this->toDocument(self::OPT_ONLY_MODIFIED);
@@ -256,7 +256,7 @@ abstract class AbstractDocument
         unset($update[self::INTERNAL_PRIMARY_KEY]);
 
         static::getCollection()
-            ->updateOne([self::INTERNAL_PRIMARY_KEY => $this->_id], ['$set' => $update]);
+            ->updateOne([self::INTERNAL_PRIMARY_KEY => $this->_id], ['$set' => $update], $options);
     }
 
     /**
